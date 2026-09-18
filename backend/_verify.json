@@ -1,0 +1,66 @@
+{
+ "PARAPHRASED": {
+  "overall_similarity_percent": 100.0,
+  "verdict": "High risk of plagiarism",
+  "identical_docs": false,
+  "total_suspect_sentences": 7,
+  "matched_sentences": 7,
+  "matched_sections": [
+   {
+    "suspect_text": "City parks and gardens are essential for making urban life better. When cities have more green areas, the air becomes cleaner because plants filter out harmful pollutants. These spaces also give people a place to stay active, which leads to improved health across the population. On top of that, wildlife such as birds and small animals benefit from the natural habitats that parks provide, helping local ecosystems thrive. Communities with well-developed public parks often experience closer social bonds, since shared outdoor spaces bring neighbors together naturally. Trees also cool down cities by offering shade, which helps counter the higher temperatures typically found in heavily built urban zones. As a result, modern city planners now see green spaces as a fundamental part of building sustainable cities, not just a nice extra.",
+    "source_text": "Urban green spaces play a critical role in improving the quality of life in cities. Urban green spaces play a critical role in improving the quality of life in cities. They also provide residents with areas for physical exercise, which contributes to better public health outcomes. Beyond health benefits, green spaces support local biodiversity by offering habitats for birds, insects, and small mammals. Cities that invest in expanding their parks tend to see stronger community engagement, as public spaces naturally encourage social interaction among neighbors. Additionally, trees and vegetation in green spaces help regulate urban temperatures by providing shade and reducing the heat-island effect common in densely built areas. For these reasons, urban planners increasingly treat green space development as a core component of sustainable city design rather than an optional amenity.",
+    "semantic_score": 0.772,
+    "lexical_score": 0.325,
+    "gap": 0.447,
+    "label": "Paraphrased (reworded copy)",
+    "risk": "high",
+    "sentence_count": 7
+   }
+  ],
+  "related_percent": 0.0,
+  "rerank_used": true
+ },
+ "UNRELATED": {
+  "overall_similarity_percent": 0.0,
+  "verdict": "Low similarity",
+  "identical_docs": false,
+  "total_suspect_sentences": 5,
+  "matched_sentences": 0,
+  "matched_sections": [],
+  "related_percent": 0.0,
+  "rerank_used": true
+ },
+ "IDENTICAL": {
+  "overall_similarity_percent": 100.0,
+  "verdict": "Documents are identical \u2014 direct copy, not paraphrase",
+  "identical_docs": true,
+  "total_suspect_sentences": 7,
+  "matched_sentences": 7,
+  "matched_sections": [],
+  "related_percent": 0.0,
+  "rerank_used": false
+ },
+ "EMPTY": {
+  "error": "Couldn't find readable sentences in one or both documents."
+ },
+ "PARAPHRASED_META": {
+  "overall_similarity_percent": 100.0,
+  "verdict": "High risk of plagiarism",
+  "identical_docs": false,
+  "total_suspect_sentences": 7,
+  "matched_sentences": 7,
+  "related_percent": 0.0,
+  "rerank_used": true
+ },
+ "SHORT_DOC": {
+  "overall_similarity_percent": 0.0,
+  "verdict": "Low similarity",
+  "identical_docs": false,
+  "total_suspect_sentences": 1,
+  "matched_sentences": 0,
+  "matched_sections": [],
+  "related_percent": 0.0,
+  "rerank_used": true
+ },
+ "EMPTY_IS_ERROR": true
+}

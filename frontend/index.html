@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Semantic Plagiarism Detection</title>
+<style>
+  :root {
+    --paper: #EAE7DD;
+    --sheet: #FBFAF7;
+    --ink: #1B1E23;
+    --ink-soft: #5B594F;
+    --line: #C9C4B4;
+    --flag: #C13B2A;
+    --flag-soft: #F6E3DE;
+    --flag-bright: #E85D3F;
+    --clear: #3F6B4A;
+    --clear-soft: #E2ECE4;
+    --amber: #93672A;
+    --amber-soft: #F5EBD9;
+    --amber-bright: #C9952F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Segoe UI', 'IBM Plex Sans', system-ui, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif { font-family: Georgia, 'Times New Roman', serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 44px 24px 96px; }
+
+  /* ---------- header ---------- */
+  header { border-bottom: 1px solid var(--line); padding-bottom: 26px; margin-bottom: 30px; }
+  .kicker {
+    display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--flag); border: 1px solid var(--flag);
+    border-radius: 999px; padding: 3px 10px; margin-bottom: 12px;
+  }
+  header h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 600; font-size: 2.05rem; margin: 0 0 8px; letter-spacing: -0.01em;
+  }
+  header p { color: var(--ink-soft); margin: 0; max-width: 62ch; }
+  header p strong { color: var(--ink); }
+
+  /* ---------- inputs ---------- */
+  .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 720px) { .inputs { grid-template-columns: 1fr; } }
+
+  .field label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; }
+  .io { position: relative; }
+  .io textarea {
+    width: 100%; min-height: 230px; resize: vertical;
+    background: var(--sheet); border: 1px solid var(--line); border-radius: 4px;
+    padding: 14px; font-family: Georgia, 'Times New Roman', serif; font-size: 0.97rem;
+    line-height: 1.55; color: var(--ink);
+  }
+  .io textarea:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .io .file-note { display: none; font-size: 0.78rem; color: var(--ink-soft); margin-top: 6px; }
+
+  .toolrow { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .toolrow button, .toolrow .alabel {
+    background: none; border: none; color: var(--ink-soft); font-size: 0.84rem;
+    padding: 4px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+    font-family: inherit;
+  }
+  .toolrow button:hover, .toolrow .alabel:hover { color: var(--ink); }
+  .toolrow .alabel { text-decoration: none; cursor: pointer; border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 12px; }
+  .toolrow .alabel:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* ---------- analyze ---------- */
+  .analyze-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 30px 0 4px; flex-wrap: wrap; }
+  button.primary {
+    background: var(--ink); color: var(--sheet); border: none; padding: 13px 34px;
+    font-family: inherit; font-size: 0.98rem; font-weight: 600; border-radius: 4px; cursor: pointer;
+  }
+  button.primary:hover { background: #000; }
+  button.primary:disabled { opacity: 0.55; cursor: progress; }
+
+  #error { color: var(--flag); margin-top: 14px; text-align: center; display: none; font-size: 0.9rem; }
+  #working { color: var(--ink-soft); font-size: 0.85rem; display: none; margin-top: 12px; text-align: center; }
+
+  /* ---------- results ---------- */
+  #results { margin-top: 52px; border-top: 1px solid var(--line); padding-top: 30px; display: none; }
+  .report-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .report-head h2 { font-family: Georgia, 'Times New Roman', serif; font-weight: 600; font-size: 1.3rem; margin: 0; }
+
+  .verdict { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; margin-top: 18px; }
+  .score-ring {
+    width: 92px; height: 92px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: conic-gradient(var(--flag-bright) calc(var(--p) * 1%), var(--line) 0);
+    position: relative;
+  }
+  .score-ring::after { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: var(--sheet); }
+  .score-ring .num { position: relative; z-index: 1; font-family: Georgia, serif; font-size: 1.5rem; font-weight: 700; }
+  .verdict .vtext .label { font-size: 1.15rem; font-weight: 600; margin: 0; }
+  .verdict .vtext .sub { color: var(--ink-soft); font-size: 0.9rem; margin: 4px 0 0; }
+  .verdict .vtext .sub strong { color: var(--ink); }
+
+  .method-note {
+    margin-top: 22px; background: var(--sheet); border: 1px solid var(--line);
+    border-radius: 4px; padding: 12px 16px; font-size: 0.84rem; color: var(--ink-soft);
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+  }
+  .method-note .chip { background: var(--clear-soft); color: var(--clear); border-radius: 999px;
+    padding: 3px 12px; font-weight: 600; font-size: 0.78rem; }
+
+  /* ---------- matched sections ---------- */
+  .sections-title { font-size: 1rem; font-weight: 600; margin: 42px 0 4px; }
+  .sections-note { color: var(--ink-soft); font-size: 0.85rem; margin: 0 0 18px; max-width: 72ch; }
+
+  .match {
+    border: 1px solid var(--line); border-left: 4px solid var(--flag-bright);
+    background: var(--sheet); border-radius: 4px; padding: 18px 18px 14px; margin-bottom: 16px;
+  }
+  .match.med { border-left-color: var(--amber-bright); }
+  .match .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .match .cols { grid-template-columns: 1fr; } }
+  .match .col { border-radius: 3px; padding: 12px 14px; }
+  .match .col.suspect { background: var(--flag-soft); }
+  .match.med .col.suspect { background: var(--amber-soft); }
+  .match .col.source { background: #F3F1EA; }
+  .match .col p.label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 6px; }
+  .match .col p.text { font-family: Georgia, serif; font-size: 0.95rem; margin: 0; }
+
+  .match-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+  .tag { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+  .tag.high { background: var(--flag-soft); color: var(--flag); border: 1px solid var(--flag); }
+  .tag.med  { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber); }
+  .tag.none { background: var(--clear-soft); color: var(--clear); }
+
+  .dualscore { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 26px; flex: 1; min-width: 260px; }
+  .dualscore .m { display: flex; flex-direction: column; gap: 3px; }
+  .dualscore .m .lab { font-size: 0.7rem; color: var(--ink-soft); display: flex; justify-content: space-between; }
+  .dualscore .m .lab b { color: var(--ink); }
+  .bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .bar > i { display: block; height: 100%; border-radius: 999px; }
+  .bar.sem > i { background: var(--flag-bright); }
+  .bar.lex > i { background: var(--ink-soft); }
+  .match.med .bar.sem > i { background: var(--amber-bright); }
+
+  .gap-chip {
+    font-size: 0.78rem; font-weight: 600; border-radius: 999px; padding: 4px 12px; white-space: nowrap;
+    background: var(--flag-soft); color: var(--flag); border: 1px solid var(--flag);
+  }
+  .gap-chip.med { background: var(--amber-soft); color: var(--amber); border-color: var(--amber); }
+  .gap-chip.short { background: var(--clear-soft); color: var(--clear); border-color: var(--clear); }
+
+  /* ---------- empty / edge states ---------- */
+  .empty-note {
+    background: var(--sheet); border: 1px dashed var(--line); border-radius: 4px;
+    padding: 26px; text-align: center; color: var(--ink-soft); font-size: 0.95rem;
+  }
+  .empty-note .big { font-size: 1.6rem; display: block; margin-bottom: 6px; }
+
+  /* ---------- print report ---------- */
+  .toolbar { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+  .toolbar button {
+    background: none; border: 1px solid var(--ink); color: var(--ink); border-radius: 4px;
+    padding: 8px 16px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  }
+  .toolbar button:hover { background: var(--ink); color: var(--sheet); }
+
+  @media print {
+    .inputs, .toolrow, .analyze-row, .toolbar, .sample-cta { display: none !important; }
+    body { background: #fff; color: #000; }
+    .wrap { max-width: 100%; padding: 0; }
+    header { border-bottom: 2px solid #000; }
+    #results { margin-top: 20px; border-top: 2px solid #000; }
+    .match { break-inside: avoid; border: 1px solid #888; }
+    .match .col.suspect { background: #fdecea !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .match.med .col.suspect { background: #fdf3e3 !important; }
+    .method-note { border: 1px solid #888; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">Semantic plagiarism detector</span>
+    <h1>Compare documents by meaning, not matching words</h1>
+    <p>Each suspect sentence is embedded and scored twice: <strong>semantic similarity</strong> (does it mean the same thing?) against <strong>wording overlap</strong> (does it share the same words?). A wide gap between the two — high meaning, low wording — is the signature of a <strong>paraphrase</strong> that keyword-matching tools like Turnitin miss.</p>
+  </header>
+
+  <div class="inputs">
+    <div class="field">
+      <label for="source">Source document</label>
+      <div class="io">
+        <textarea id="source" placeholder="Paste the original text here, or upload a file…"></textarea>
+        <div class="file-note" id="sourceFileNote"></div>
+      </div>
+      <div class="toolrow">
+        <label class="alabel" for="sourceFile" title="Upload .pdf, .docx or .txt">📄 Upload file</label>
+        <input type="file" id="sourceFile" accept=".pdf,.docx,.txt" hidden>
+        <button type="button" class="sample-btn" onclick="loadSample('source')">Load sample source</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="suspect">Suspect document</label>
+      <div class="io">
+        <textarea id="suspect" placeholder="Paste the text to check here, or upload a file…"></textarea>
+        <div class="file-note" id="suspectFileNote"></div>
+      </div>
+      <div class="toolrow">
+        <label class="alabel" for="suspectFile" title="Upload .pdf, .docx or .txt">📄 Upload file</label>
+        <input type="file" id="suspectFile" accept=".pdf,.docx,.txt" hidden>
+        <button type="button" class="sample-btn" onclick="loadSample('suspect')">Load sample (paraphrased)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="analyze-row">
+    <button class="primary" id="analyzeBtn" type="button" onclick="analyze()">Analyze documents</button>
+  </div>
+  <p id="working">…</p>
+  <p id="error"></p>
+
+  <div id="results">
+    <div class="report-head">
+      <h2>Plagiarism report</h2>
+      <div class="toolbar">
+        <button type="button" onclick="window.print()">Save / print report</button>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <div class="score-ring" id="scoreRing">
+        <span class="num" id="scoreNum">0%</span>
+      </div>
+      <div class="vtext">
+        <p class="label" id="verdictText"></p>
+        <p class="sub" id="verdictSub"></p>
+      </div>
+    </div>
+
+    <div class="method-note">
+      <span class="chip" id="rerankChip">two-stage rerank: ON</span>
+      <span id="methodText">Semantic score from a cross-encoder reranker · wording overlap from character-sequence match · overall % = share of suspect words inside close-copy / paraphrase passages.</span>
+    </div>
+
+    <div class="sections-title">Matched passages</div>
+    <p class="sections-note">Side-by-side matches, scored both ways. The highlighted (suspect) side is red when meaning was copied with reworded text — hover the gap chip to follow the logic.</p>
+    <div id="matchList"></div>
+  </div>
+</div>
+
+<script>
+  const SAMPLES = {
+    source: `Urban green spaces play a critical role in improving the quality of life in cities. Parks and gardens reduce air pollution by filtering harmful particles from the atmosphere. They also provide residents with areas for physical exercise, which contributes to better public health outcomes. Beyond health benefits, green spaces support local biodiversity by offering habitats for birds, insects, and small mammals. Cities that invest in expanding their parks tend to see stronger community engagement, as public spaces naturally encourage social interaction among neighbors. Additionally, trees and vegetation in green spaces help regulate urban temperatures by providing shade and reducing the heat-island effect common in densely built areas. For these reasons, urban planners increasingly treat green space development as a core component of sustainable city design rather than an optional amenity.`,
+    suspect: `City parks and gardens are essential for making urban life better. When cities have more green areas, the air becomes cleaner because plants filter out harmful pollutants. These spaces also give people a place to stay active, which leads to improved health across the population. On top of that, wildlife such as birds and small animals benefit from the natural habitats that parks provide, helping local ecosystems thrive. Communities with well-developed public parks often experience closer social bonds, since shared outdoor spaces bring neighbors together naturally. Trees also cool down cities by offering shade, which helps counter the higher temperatures typically found in heavily built urban zones. As a result, modern city planners now see green spaces as a fundamental part of building sustainable cities, not just a nice extra.`
+  };
+
+  function el(id) { return document.getElementById(id); }
+
+  function loadSample(which) {
+    el(which).value = SAMPLES[which];
+    el(which + 'FileNote').style.display = 'none';
+  }
+
+  // ---- file upload → extract → fill textarea ----
+  function wireUpload(inputId, textareaId, noteId) {
+    el(inputId).addEventListener('change', async function () {
+      const f = el(inputId).files[0];
+      const note = el(noteId);
+      if (!f) return;
+      note.style.display = 'block';
+      note.textContent = 'Reading "' + f.name + '", classifying it…';
+      try {
+        const fd = new FormData();
+        fd.append('file', f);
+        const res = await fetch('/api/extract', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || ('extraction failed (' + res.status + ')'));
+        el(textareaId).value = data.text;
+        note.textContent = '✓ Extracted ' + data.text.split(/\s+/).length + ' words from ' + f.name +
+          ' — you can still edit it below.';
+      } catch (e) {
+        note.textContent = '⚠ Couldn\'t read that file: ' + e.message + '. Paste the text instead, or try a different file.';
+      }
+    });
+  }
+  wireUpload('sourceFile', 'source', 'sourceFileNote');
+  wireUpload('suspectFile', 'suspect', 'suspectFileNote');
+
+  async function analyze() {
+    const source_text = el('source').value.trim();
+    const suspect_text = el('suspect').value.trim();
+    const errorEl = el('error');
+    errorEl.style.display = 'none';
+    el('working').style.display = 'none';
+
+    if (!source_text || !suspect_text) {
+      errorEl.textContent = 'Paste text into both fields first.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    const btn = el('analyzeBtn');
+    btn.disabled = true;
+    btn.textContent = 'Analyzing…';
+    el('working').style.display = 'block';
+    el('working').textContent = 'Embedding sentences, retrieving pairs, reranking with the cross-encoder…';
+
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_text, suspect_text })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail ? JSON.stringify(data.detail) : ('Server returned ' + res.status));
+      if (data.error) throw new Error(data.error);
+      render(data);
+    } catch (e) {
+      errorEl.textContent = "Couldn't complete analysis: " + e.message.replace(/^"/, '').replace(/"$/, '');
+      errorEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Analyze documents';
+      el('working').style.display = 'none';
+    }
+  }
+
+  function riskClass(sec) {
+    if (sec.risk === 'high') return 'high';
+    if (sec.risk === 'medium') return 'med';
+    return 'none';
+  }
+
+  function render(data) {
+    const results = el('results');
+    results.style.display = 'block';
+
+    const score = Math.round(data.overall_similarity_percent);
+    el('scoreNum').textContent = score + '%';
+    const ring = el('scoreRing');
+    ring.style.setProperty('--p', Math.min(100, Math.max(0, score)));
+    const risk = score >= 50 ? 'var(--flag-bright)' : (score >= 20 ? 'var(--amber-bright)' : 'var(--clear)');
+    ring.style.setProperty('--flag-bright', risk);
+
+    el('verdictText').textContent = data.verdict;
+
+    let sub;
+    if (data.identical_docs) {
+      sub = 'Both documents are the same text. No section-by-section breakdown needed.';
+    } else if (data.matched_sentences === 0) {
+      sub = 'No sentence in the suspect document matched any source sentence in meaning.';
+    } else {
+      sub = data.matched_sentences + ' of ' + data.total_suspect_sentences +
+        ' suspect sentences matched in meaning to the source.';
+      if (data.related_percent > 0) {
+        sub += ' A further ' + data.related_percent.toFixed(1) + '% of the document is only "related", not copied.';
+      }
+    }
+    el('verdictSub').innerHTML = sub.replace(/["']/g, m => m);
+
+    el('rerankChip').textContent = data.rerank_used ? 'two-stage rerank: ON' : 'two-stage rerank: OFF (fallback mode)';
+
+    const list = el('matchList');
+    list.innerHTML = '';
+
+    if (data.matched_sections.length === 0) {
+      list.innerHTML = '<div class="empty-note">' +
+        '<span class="big">✓</span>' +
+        'No meaningfully similar passages found. ' +
+        (data.identical_docs ? '' : 'You can print this report as evidence of a clean document.') +
+        '</div>';
+      return;
+    }
+
+    data.matched_sections.forEach(sec => {
+      const rk = riskClass(sec);
+      const sem = Math.round(sec.semantic_score * 100);
+      const lex = Math.round(sec.lexical_score * 100);
+      const gap = Math.round(sec.gap * 100);
+
+      const row = document.createElement('div');
+      row.className = 'match ' + (rk === 'med' ? 'med' : '');
+      let gapChip = '', gapText = '';
+      if (rk === 'high') {
+        if (gap >= 20) {
+          gapText = 'meaning copied · wording rewritten (' + gap + ' pt gap)';
+          gapChip = 'gap-chip';
+        } else {
+          gapText = 'close copy, lightly edited';
+          gapChip = 'gap-chip short';
+        }
+      } else if (rk === 'med') {
+        gapText = 'related — check manually';
+        gapChip = 'gap-chip med';
+      }
+      row.innerHTML = `
+        <div class="cols">
+          <div class="col suspect">
+            <p class="label">Suspect (highlighted)</p>
+            <p class="text">${escapeHtml(sec.suspect_text)}</p>
+          </div>
+          <div class="col source">
+            <p class="label">Source</p>
+            <p class="text">${escapeHtml(sec.source_text)}</p>
+          </div>
+        </div>
+        <div class="match-meta">
+          <div class="dualscore">
+            <div class="m">
+              <span class="lab">Semantic meaning <b>${sem}%</b></span>
+              <span class="bar sem"><i style="width:${sem}%"></i></span>
+            </div>
+            <div class="m">
+              <span class="lab">Wording overlap <b>${lex}%</b></span>
+              <span class="bar lex"><i style="width:${lex}%"></i></span>
+            </div>
+          </div>
+          <span class="tag ${rk}">${escapeHtml(sec.label)}</span>
+          ${gapChip ? `<span class="${gapChip}" title="${escapeHtml(gapText)}">${sem - lex} pt gap</span>` : ''}
+        </div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sentence-transformers
+spacy
+numpy
+pydantic
+python-multipart
+python-docx
+pdfplumber

@@ -1,0 +1,24 @@
+{
+ "P": {
+  "overall": 100.0,
+  "verdict": "High risk of plagiarism",
+  "matched": 7,
+  "rerank": true
+ },
+ "U": {
+  "overall": 0.0,
+  "verdict": "Low similarity",
+  "matched": 0,
+  "rerank": true
+ },
+ "sections": [
+  {
+   "semantic_score": 0.772,
+   "lexical_score": 0.325,
+   "gap": 0.447,
+   "label": "Paraphrased (reworded copy)",
+   "risk": "high",
+   "count": 7
+  }
+ ]
+}
